@@ -1,2 +1,13 @@
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities";
+
+@theme {
+  --color-ink: #172a36;
+  --color-muted: #75858d;
+  --color-green: #087e70;
+  --color-green-light: #e5f4f0;
+  --color-canvas: #f4f7f6;
+  --color-line: #e8eeeb;
+  --color-amber: #f4b94e;
+  --color-danger: #b54848;
+}
