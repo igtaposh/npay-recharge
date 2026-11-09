@@ -1,7 +1,25 @@
 {
   "name": "npay-recharge",
   "version": "1.0.0",
+  "private": true,
+  "description": "A mobile-first Expo recharge app prototype built with React Native and Expo Router. It includes a wallet, prepaid and DTH recharge flows, Google Play gift codes, transaction history, profile, help, settings, and login/signup screens.",
+  "homepage": "https://github.com/igtaposh/npay-recharge#readme",
+  "bugs": {
+    "url": "https://github.com/igtaposh/npay-recharge/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igtaposh/npay-recharge.git"
+  },
+  "type": "commonjs",
   "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "expo lint"
+  },
   "dependencies": {
     "@expo/ui": "~58.0.27",
     "expo": "~58.0.23",
@@ -39,14 +57,6 @@
     "tailwindcss": "^4.3.5",
     "typescript": "~6.0.3"
   },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
-    "lint": "expo lint"
-  },
-  "private": true,
   "overrides": {
     "lightningcss": "1.30.1"
   }
