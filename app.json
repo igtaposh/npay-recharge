@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "NativeWind Expo Starter",
-    "slug": "nativewind-expo-starter",
+    "name": "Npay Recharge",
+    "slug": "npay-recharge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "nativewindexpostarter",
+    "scheme": "npayrecharge",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.nativewindexpostarter"
     },
     "web": {
       "bundler": "metro",

@@ -1,4 +1,4 @@
-# NativeWind Expo Starter
+# Npay Recharge
 
 An Expo starter for building cross-platform React Native apps with NativeWind and
 Tailwind CSS.
