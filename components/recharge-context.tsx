@@ -1,5 +1,5 @@
-import { createContext, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 
 export type Transaction = {
   id: string;
@@ -16,7 +16,9 @@ type RechargeContextValue = {
   refreshedAt: string;
   refreshBalance: () => void;
   addBalance: (amount: number) => void;
-  addTransaction: (transaction: Omit<Transaction, "id" | "date" | "status">) => void;
+  addTransaction: (
+    transaction: Omit<Transaction, "id" | "date" | "status">,
+  ) => void;
 };
 
 const RechargeContext = createContext<RechargeContextValue | null>(null);
@@ -40,6 +42,38 @@ const initialTransactions: Transaction[] = [
   },
   {
     id: "sample-3",
+    title: "Airtel DTH",
+    subtitle: "DTH recharge · •••• 7305",
+    amount: 350,
+    date: "12 Jun, 2026",
+    status: "Successful",
+  },
+  {
+    id: "sample-4",
+    title: "Airtel DTH",
+    subtitle: "DTH recharge · •••• 7305",
+    amount: 350,
+    date: "12 Jun, 2026",
+    status: "Successful",
+  },
+  {
+    id: "sample-5",
+    title: "Airtel DTH",
+    subtitle: "DTH recharge · •••• 7305",
+    amount: 350,
+    date: "12 Jun, 2026",
+    status: "Successful",
+  },
+  {
+    id: "sample-6",
+    title: "Airtel DTH",
+    subtitle: "DTH recharge · •••• 7305",
+    amount: 350,
+    date: "12 Jun, 2026",
+    status: "Successful",
+  },
+  {
+    id: "sample-7",
     title: "Airtel DTH",
     subtitle: "DTH recharge · •••• 7305",
     amount: 350,
@@ -82,7 +116,11 @@ export function RechargeProvider({ children }: { children: ReactNode }) {
     [balance, transactions, refreshedAt],
   );
 
-  return <RechargeContext.Provider value={value}>{children}</RechargeContext.Provider>;
+  return (
+    <RechargeContext.Provider value={value}>
+      {children}
+    </RechargeContext.Provider>
+  );
 }
 
 export function useRecharge() {

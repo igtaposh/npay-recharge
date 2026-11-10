@@ -34,10 +34,10 @@ export default function GooglePlayScreen() {
   return (
     <Page>
       <PageHeading eyebrow="GIFT & ENTERTAINMENT" title="Google Play" subtitle="A little something for your next favourite thing." />
-      <Card className="items-center gap-2.5 py-[25px]">
-        <View className="h-[58px] w-[58px] items-center justify-center rounded-[20px] bg-[#EEEAFE]"><Text className="ml-[3px] text-[23px] text-[#6758C8]">▶</Text></View>
-        <Text className="text-[19px] font-extrabold text-ink">Play more, your way.</Text>
-        <Text className="text-center text-xs leading-[18px] text-muted">Choose a value and enter the Google account email for your gift code.</Text>
+      <Card className="items-center gap-3 py-7">
+        <View className="h-16 w-16 items-center justify-center rounded-[22px] bg-[#EEEAFE]"><Text className="ml-[3px] text-[25px] text-[#6758C8]">▶</Text></View>
+        <Text className="text-[21px] font-extrabold text-ink">Play more, your way.</Text>
+        <Text className="text-center text-[13px] leading-5 text-muted">Choose a value and enter the Google account email for your gift code.</Text>
       </Card>
       <Field
         label="Google account email"
@@ -46,9 +46,9 @@ export default function GooglePlayScreen() {
         placeholder="you@example.com"
         keyboardType="email-address"
       />
-      <View className="gap-[11px]">
-        <Text className="text-[15px] font-extrabold text-ink">Choose a value</Text>
-        <View className="flex-row flex-wrap gap-2.5">
+      <View className="gap-3">
+        <Text className="text-base font-extrabold text-ink">Choose a value</Text>
+        <View className="flex-row flex-wrap gap-3">
           {amounts.map((value) => (
             <Button
               key={value}
@@ -59,9 +59,9 @@ export default function GooglePlayScreen() {
           ))}
         </View>
       </View>
-      {error ? <Text className="text-xs text-danger">{error}</Text> : null}
+      {error ? <Text className="text-[13px] leading-5 text-danger">{error}</Text> : null}
       <Button label={amount ? `Get code · ₹${amount}` : "Choose a value"} onPress={submit} />
-      <Text className="text-center text-[11px] text-muted">Demo only. No real gift code will be issued.</Text>
+      <Text className="text-center text-xs leading-5 text-muted">Demo only. No real gift code will be issued.</Text>
     </Page>
   );
 }

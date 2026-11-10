@@ -19,15 +19,15 @@ export default function AddBalanceScreen() {
       return;
     }
     addBalance(parsedAmount);
-    router.replace("/(tabs)");
+    router.replace("/(tabs)/wallet");
   }
 
   return (
     <Page>
       <PageHeading eyebrow="YOUR WALLET" title="Add balance" subtitle="Top up your demo wallet in a few taps." />
-      <Card className="gap-[7px] border-[#D3EAE3] bg-green-light">
-        <Text className="text-[10px] font-extrabold tracking-[0.8px] text-green">AVAILABLE BALANCE</Text>
-        <Text className="text-[27px] font-extrabold text-ink">₹{balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</Text>
+      <Card className="gap-2 border-[#D6E4FF] bg-green-light">
+        <Text className="text-xs font-extrabold tracking-[0.6px] text-green">AVAILABLE BALANCE</Text>
+        <Text className="text-[30px] font-extrabold text-ink">₹{balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</Text>
       </Card>
       <Field
         label="Amount to add"
@@ -36,32 +36,32 @@ export default function AddBalanceScreen() {
         placeholder="Enter amount in ₹"
         keyboardType="numeric"
       />
-      <View className="-mt-[7px] flex-row flex-wrap gap-[9px]">
+      <View className="-mt-2 flex-row flex-wrap gap-2.5">
         {suggestions.map((value) => (
           <Pressable
             key={value}
             accessibilityRole="button"
             onPress={() => { setAmount(String(value)); setError(""); }}
-            className={`rounded-[13px] border px-[13px] py-2.5 ${amount === String(value) ? "border-green bg-green-light" : "border-line bg-white"}`}
+            className={`rounded-[15px] border px-4 py-3 ${amount === String(value) ? "border-green bg-green-light" : "border-line bg-white"}`}
           >
-            <Text className={`text-xs font-bold ${amount === String(value) ? "text-green" : "text-ink"}`}>+ ₹{value.toLocaleString("en-IN")}</Text>
+            <Text className={`text-[13px] font-bold ${amount === String(value) ? "text-green" : "text-ink"}`}>+ ₹{value.toLocaleString("en-IN")}</Text>
           </Pressable>
         ))}
       </View>
-      <Card className="gap-3.5">
-        <Text className="text-[10px] font-extrabold tracking-[0.7px] text-muted">PAYMENT METHOD</Text>
-        <View className="flex-row items-center gap-[11px]">
-          <View className="h-[39px] w-[39px] items-center justify-center rounded-[13px] bg-green-light"><Text className="text-[17px] text-green">▤</Text></View>
-          <View className="flex-1 gap-[3px]">
-            <Text className="text-[13px] font-bold text-ink">UPI payment</Text>
-            <Text className="text-[11px] text-muted">Secure demo checkout</Text>
+      <Card className="gap-4">
+        <Text className="text-xs font-extrabold tracking-[0.6px] text-muted">PAYMENT METHOD</Text>
+        <View className="flex-row items-center gap-3">
+          <View className="h-11 w-11 items-center justify-center rounded-[15px] bg-green-light"><Text className="text-lg text-green">▤</Text></View>
+          <View className="flex-1 gap-1">
+            <Text className="text-sm font-bold text-ink">UPI payment</Text>
+            <Text className="text-xs text-muted">Secure demo checkout</Text>
           </View>
-          <Text className="text-[9px] font-extrabold text-green">SELECTED</Text>
+          <Text className="text-[11px] font-extrabold text-green">SELECTED</Text>
         </View>
       </Card>
-      {error ? <Text className="text-xs text-danger">{error}</Text> : null}
+      {error ? <Text className="text-[13px] leading-5 text-danger">{error}</Text> : null}
       <Button label={amount ? `Add ₹${Number(amount).toLocaleString("en-IN")}` : "Enter an amount"} onPress={submit} />
-      <Text className="text-center text-[11px] text-muted">Demo only. No money will be charged or transferred.</Text>
+      <Text className="text-center text-xs leading-5 text-muted">Demo only. No money will be charged or transferred.</Text>
     </Page>
   );
 }

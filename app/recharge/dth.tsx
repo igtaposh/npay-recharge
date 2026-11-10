@@ -34,11 +34,11 @@ export default function DthScreen() {
   return (
     <Page>
       <PageHeading eyebrow="TELEVISION" title="DTH recharge" subtitle="Keep your favourite shows coming." />
-      <Card className="flex-row items-center gap-3">
-        <View className="h-[43px] w-[43px] items-center justify-center rounded-[15px] bg-[#FFF1DC]"><Text className="text-xl text-[#BB7921]">▤</Text></View>
+      <Card className="flex-row items-center gap-3.5">
+        <View className="h-12 w-12 items-center justify-center rounded-[16px] bg-[#FFF1DC]"><Text className="text-[22px] text-[#BB7921]">▤</Text></View>
         <View className="flex-1 gap-1">
-          <Text className="text-sm font-extrabold text-ink">Instant top-ups</Text>
-          <Text className="text-[10px] text-muted">Tata Play · Airtel · Dish TV · Sun Direct</Text>
+          <Text className="text-[15px] font-extrabold text-ink">Instant top-ups</Text>
+          <Text className="text-xs text-muted">Tata Play · Airtel · Dish TV · Sun Direct</Text>
         </View>
       </Card>
       <Field
@@ -47,9 +47,9 @@ export default function DthScreen() {
         onChangeText={(value) => { setSubscriber(value); setError(""); }}
         placeholder="Enter your DTH customer ID"
       />
-      <View className="gap-[11px]">
-        <Text className="text-[15px] font-extrabold text-ink">Select an amount</Text>
-        <View className="flex-row flex-wrap gap-2.5">
+      <View className="gap-3">
+        <Text className="text-base font-extrabold text-ink">Select an amount</Text>
+        <View className="flex-row flex-wrap gap-3">
           {amounts.map((value) => (
             <Button
               key={value}
@@ -60,9 +60,9 @@ export default function DthScreen() {
           ))}
         </View>
       </View>
-      {error ? <Text className="text-xs text-danger">{error}</Text> : null}
+      {error ? <Text className="text-[13px] leading-5 text-danger">{error}</Text> : null}
       <Button label={amount ? `Continue · ₹${amount}` : "Choose an amount"} onPress={submit} />
-      <Text className="text-center text-[11px] text-muted">Demo only. No real DTH recharge will be made.</Text>
+      <Text className="text-center text-xs leading-5 text-muted">Demo only. No real DTH recharge will be made.</Text>
     </Page>
   );
 }
