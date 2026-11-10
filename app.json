@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.anonymous.npay"
+      "bundleIdentifier": "com.recharges.npay"
     },
     "android": {
       "icon": "./assets/images/icon.png",
@@ -18,7 +18,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.npay"
+      "package": "com.recharges.npay"
     },
     "web": {
       "bundler": "metro",

@@ -34,7 +34,7 @@ export default function WalletScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push("/wallet/add")}
-          className="self-start rounded-[14px] bg-white px-4 py-3 active:opacity-80"
+          className="self-start rounded-[14px] bg-white px-4 py-3"
         >
           <Text className="text-sm font-extrabold text-[#0550DD]">
             ＋ Add money

@@ -30,7 +30,7 @@ export default function AddBalanceScreen() {
         <Text className="text-[30px] font-extrabold text-ink">₹{balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</Text>
       </Card>
       <Field
-        label="Amount to add"
+        maxLength={100}
         value={amount}
         onChangeText={(value) => { setAmount(value.replace(/[^\d.]/g, "")); setError(""); }}
         placeholder="Enter amount in ₹"

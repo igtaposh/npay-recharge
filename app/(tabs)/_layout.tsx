@@ -9,6 +9,7 @@ export default function RootLayout() {
     <Tabs
       screenOptions={() => ({
         headerShown: false,
+        animationEnabled: false,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: "#0550dd",
         tabBarStyle: [

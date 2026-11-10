@@ -221,7 +221,7 @@ export function Button({
             useNativeDriver: true,
           }).start();
         }}
-        className={`min-h-[54px] items-center justify-center rounded-[17px] px-5 active:opacity-80 disabled:opacity-45 ${buttonClass}`}
+        className={`min-h-[54px] items-center justify-center rounded-[17px] px-5 disabled:opacity-45 ${buttonClass}`}
       >
         <Text className={`text-base font-bold ${textClass}`}>{label}</Text>
       </Pressable>

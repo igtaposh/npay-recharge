@@ -1,8 +1,10 @@
 import "./global.css";
 
-import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
+import { KeyboardAvoidingView, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { RechargeProvider } from "../components/recharge-context";
 import { AppStartupSkeleton } from "../components/ui";
@@ -16,21 +18,26 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <RechargeProvider>
-        {isStarting ? (
-          <AppStartupSkeleton />
-        ) : (
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: "fade_from_bottom",
-              animationDuration: 240,
-            }}
-          />
-        )}
-        <StatusBar style="dark" />
-      </RechargeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <RechargeProvider>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            {isStarting ? (
+              <AppStartupSkeleton />
+            ) : (
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                }}
+              />
+            )}
+          </KeyboardAvoidingView>
+          <StatusBar style="dark" />
+        </RechargeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

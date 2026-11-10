@@ -122,7 +122,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={`${service.title}, ${service.subtitle}`}
             onPress={() => router.push(service.href)}
-            className="relative min-h-32.5 flex-1 overflow-hidden rounded-xl border border-line bg-white px-3 py-3 active:opacity-80"
+            className="relative min-h-32.5 flex-1 overflow-hidden rounded-xl border border-line bg-white px-3 py-3"
             style={{
               borderColor: `${service.tint}2A`,
               shadowColor: "#000000",

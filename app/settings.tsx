@@ -71,7 +71,7 @@ export default function SettingsScreen() {
         accessibilityRole="button"
         accessibilityLabel="Log in or switch account"
         onPress={() => router.push("/login")}
-        className="mt-1 flex-row items-center gap-3.5 rounded-xl border border-gray-300 bg-white p-4 active:opacity-80"
+        className="mt-1 flex-row items-center gap-3.5 rounded-xl border border-gray-300 bg-white p-4"
       >
         <View className="h-15 w-15 items-center justify-center rounded-xl bg-green-light">
           <Ionicons name="person-circle-outline" size={26} />
