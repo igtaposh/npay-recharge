@@ -35,8 +35,16 @@
           "imageWidth": 76
         }
       ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow $(PRODUCT_NAME) to select a contact for mobile recharge."
+        }
+      ],
       "@react-native-vector-icons/material-icons",
-      "@react-native-vector-icons/ionicons"
+      "@react-native-vector-icons/ionicons",
+      "expo-audio",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

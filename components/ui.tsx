@@ -1,4 +1,3 @@
-import { styled } from "nativewind";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
@@ -10,9 +9,7 @@ import {
   View,
 } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-const StyledSafeAreaView = styled(SafeAreaView);
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export function Page({
   children,
@@ -20,21 +17,28 @@ export function Page({
 }: {
   children: ReactNode;
   scroll?: boolean;
+  walletBar?: boolean;
 }) {
+  const insets = useSafeAreaInsets();
   return (
-    <StyledSafeAreaView className="flex-1 bg-canvas" edges={["top", "bottom"]}>
+    <View
+      style={{ paddingTop: insets.top + 10, paddingBottom: insets.bottom }}
+      className="flex-1 bg-canvas"
+    >
       {scroll ? (
         <ScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="gap-[22px] px-5 pb-8 pt-5">{children}</View>
+          <View className="min-h-screen gap-5.5 px-5 pb-8 pt-1">
+            {children}
+          </View>
         </ScrollView>
       ) : (
-        <View className="flex-1 gap-[22px] px-5 pb-8 pt-5">{children}</View>
+        <View className="flex-1 gap-5.5 px-5 pb-8 pt-1">{children}</View>
       )}
-    </StyledSafeAreaView>
+    </View>
   );
 }
 
@@ -44,12 +48,7 @@ function SkeletonBlock({ className }: { className: string }) {
 
 export function AppStartupSkeleton() {
   return (
-    <StyledSafeAreaView
-      accessibilityLabel="Loading NPay"
-      accessibilityRole="progressbar"
-      className="flex-1 bg-canvas"
-      edges={["top", "bottom"]}
-    >
+    <View className="flex-1 bg-canvas">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="gap-[22px] px-5 pb-8 pt-5">
           <View className="flex-row items-center gap-3.5 py-1">
@@ -111,7 +110,7 @@ export function AppStartupSkeleton() {
           </View>
         </View>
       </ScrollView>
-    </StyledSafeAreaView>
+    </View>
   );
 }
 
@@ -149,9 +148,7 @@ export function PageHeading({
             {title}
           </Text>
           {subtitle ? (
-            <Text className="text-sm leading-[21px] text-muted">
-              {subtitle}
-            </Text>
+            <Text className="text-sm leading-5.5 text-muted">{subtitle}</Text>
           ) : null}
         </View>
         {right}
@@ -207,8 +204,8 @@ export function Button({
           if (!reduceMotion && !disabled) {
             NativeAnimated.spring(pressScale, {
               toValue: 0.98,
-              speed: 28,
-              bounciness: 2,
+              speed: 45,
+              bounciness: 0,
               useNativeDriver: true,
             }).start();
           }
@@ -216,8 +213,8 @@ export function Button({
         onPressOut={() => {
           NativeAnimated.spring(pressScale, {
             toValue: 1,
-            speed: 28,
-            bounciness: 2,
+            speed: 45,
+            bounciness: 0,
             useNativeDriver: true,
           }).start();
         }}

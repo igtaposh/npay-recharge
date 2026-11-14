@@ -1,4 +1,6 @@
+import { WalletBalanceBar } from "@/components/wallet-balance-bar";
 import Ionicons from "@react-native-vector-icons/ionicons/static";
+import MaterialIcons from "@react-native-vector-icons/material-icons/static";
 import { Link, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { Page, PageHeading } from "../components/ui";
@@ -9,29 +11,29 @@ const settings = [
     detail: "View your informations",
     icon: <Ionicons name="person" size={20} />,
   },
-  {
-    title: "Notifications",
-    detail: "Recharge reminders and offers",
-    icon: <Ionicons name="notifications" size={20} />,
-  },
+  // {
+  //   title: "Notifications",
+  //   detail: "Recharge reminders and offers",
+  //   icon: <Ionicons name="notifications" size={20} />,
+  // },
   {
     title: "Privacy & security",
     detail: "Manage your security preferences",
     icon: <Ionicons name="lock-closed" size={20} />,
   },
+  // {
+  //   title: "Language",
+  //   detail: "English",
+  //   icon: <Ionicons name="language-sharp" size={20} />,
+  // },
   {
-    title: "Language",
-    detail: "English",
-    icon: <Ionicons name="language-sharp" size={20} />,
-  },
-  {
-    title: "Commisions",
-    detail: "Know more about commisions",
+    title: "Commissions",
+    detail: "Company-wise commission rates",
     icon: <Ionicons name="podium" size={20} />,
   },
   {
     title: "Developer",
-    detail: "Know more about us",
+    detail: "About the developer",
     icon: <Ionicons name="information-circle" size={25} />,
   },
 ];
@@ -41,6 +43,17 @@ export default function SettingsScreen() {
 
   return (
     <Page>
+      <View className="flex-row items-center justify-between">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={() => router.back()}
+          className="h-11 w-11 items-center justify-center rounded-[15px] border border-line bg-white"
+        >
+          <MaterialIcons name="arrow-back" size={22} color="#172B4D" />
+        </Pressable>
+        <WalletBalanceBar />
+      </View>
       <PageHeading
         eyebrow="PREFERENCES"
         title="Settings"
@@ -51,9 +64,19 @@ export default function SettingsScreen() {
           <Pressable
             key={item.title}
             accessibilityRole="button"
-            onPress={() =>
-              index === 3 ? router.push("/(tabs)/help") : undefined
-            }
+            onPress={() => {
+              if (item.title === "Profile") {
+                router.push("/profile");
+              } else if (item.title === "Privacy & security") {
+                router.push("/privacy");
+              } else if (item.title === "Commissions") {
+                router.push("/commissions");
+              } else if (item.title === "Developer") {
+                router.push("/developer");
+              } else if (index === 3) {
+                router.push("/(tabs)/help");
+              }
+            }}
             className={`flex-row items-center gap-3.5 py-4 `}
           >
             <View className="h-15 w-15 items-center justify-center rounded-[15px] bg-green-light">
@@ -111,7 +134,7 @@ export default function SettingsScreen() {
           <Text className="text-sm mt-2 leading-[18px] text-muted">
             By using this application, you acknowledge that you have read,
             understood, and agreed to our{" "}
-            <Link className="text-green" href="/">
+            <Link className="text-green" href="/privacy">
               Privacy Policy
             </Link>{" "}
             and{" "}

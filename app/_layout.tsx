@@ -5,7 +5,10 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  SafeAreaProvider,
+  initialWindowMetrics,
+} from "react-native-safe-area-context";
 import { RechargeProvider } from "../components/recharge-context";
 import { AppStartupSkeleton } from "../components/ui";
 
@@ -13,13 +16,13 @@ export default function RootLayout() {
   const [isStarting, setIsStarting] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsStarting(false), 650);
+    const timer = setTimeout(() => setIsStarting(false), 300);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <RechargeProvider>
           <KeyboardAvoidingView
             style={{ flex: 1 }}
@@ -31,6 +34,7 @@ export default function RootLayout() {
               <Stack
                 screenOptions={{
                   headerShown: false,
+                  freezeOnBlur: true,
                 }}
               />
             )}

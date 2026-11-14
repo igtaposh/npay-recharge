@@ -1,6 +1,6 @@
 import CustomBottomSheet from "@/components/customBottomSheet";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Button, Field, Page } from "../../components/ui";
@@ -71,7 +71,7 @@ export default function LoginScreen() {
   };
   return (
     <>
-      <Page>
+      <Page walletBar={false}>
         <View
           accessibilityLabel="NPay mobile recharge and wallet illustration"
           className="relative h-43.5 items-center justify-center overflow-hidden rounded-[30px] bg-[#EAF1FF]"
@@ -142,9 +142,9 @@ export default function LoginScreen() {
           <Text className="text-md text-muted">
             Don&apos;t remember your password?
           </Text>
-          <Link href={"/"} className="text-md font-mediumt text-green ">
-            Reset it
-          </Link>
+          <Pressable onPress={() => router.push("/(auth)/resetPassword")}>
+            <Text className="text-md font-mediumt text-green ">Reset it</Text>
+          </Pressable>
         </View>
 
         <Button label="Sign in" onPress={submit} />

@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
+import { Easing } from "react-native-reanimated";
 
 interface CustomBottomSheetProps {
   visible: boolean;
@@ -43,6 +43,11 @@ export default function CustomBottomSheet({
       <BottomSheet
         index={visible ? 0 : -1}
         snapPoints={snapPoints}
+        enableDynamicSizing={false}
+        animationConfigs={{
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        }}
         enablePanDownToClose={enablePanDownToClose}
         backdropComponent={renderBackdrop}
         backgroundStyle={{ backgroundColor }}
@@ -53,7 +58,7 @@ export default function CustomBottomSheet({
         }}
         onClose={onClose}
         keyboardBehavior="interactive"
-        keyboardBlurBehavior="restore"
+        keyboardBlurBehavior="none"
       >
         <BottomSheetScrollView
           style={{ flex: 1 }}
@@ -67,10 +72,7 @@ export default function CustomBottomSheet({
           {title && (
             <View
               style={{
-                paddingVertical: 16,
-                borderBottomWidth: 1,
-                borderBottomColor: "#EEEEEE",
-                marginBottom: 16,
+                paddingVertical: 8,
               }}
             >
               <Text

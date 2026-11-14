@@ -8,7 +8,7 @@ const suggestions = [500, 1000, 2000, 5000];
 
 export default function AddBalanceScreen() {
   const router = useRouter();
-  const { balance, addBalance } = useRecharge();
+  const { balance, addTransaction } = useRecharge();
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
 
@@ -18,7 +18,12 @@ export default function AddBalanceScreen() {
       setError("Enter an amount between ₹1 and ₹1,00,000.");
       return;
     }
-    addBalance(parsedAmount);
+    addTransaction({
+      title: "Wallet top-up",
+      subtitle: "Added to NPay wallet · UPI",
+      amount: parsedAmount,
+      category: "wallet",
+    });
     router.replace("/(tabs)/wallet");
   }
 
