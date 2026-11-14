@@ -2,10 +2,11 @@ import Ionicons from "@react-native-vector-icons/ionicons/static";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useRecharge } from "../../components/recharge-context";
 import { TransactionRow } from "../../components/transaction-row";
 import { Page, SectionTitle } from "../../components/ui";
+import { errorMessage } from "../../data/api";
 
 const services = [
   {
@@ -39,7 +40,7 @@ const services = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { balance, transactions, refreshedAt, refreshBalance } = useRecharge();
+  const { account, balance, transactions, refreshBalance } = useRecharge();
   const [showBalance, setShowBalance] = useState(true);
 
   return (
@@ -50,7 +51,8 @@ export default function HomeScreen() {
             YOUR EVERYDAY PAYMENTS
           </Text>
           <Text className="text-[22px] font-extrabold text-ink">
-            Hello, Alex <Ionicons name="color-wand-outline" size={20} />
+            Hello, {account?.name.split(" ")[0] || "Partner"}{" "}
+            <Ionicons name="color-wand-outline" size={20} />
           </Text>
         </View>
         <Pressable
@@ -96,7 +98,11 @@ export default function HomeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Refresh wallet balance"
-          onPress={refreshBalance}
+          onPress={() => {
+            void refreshBalance().catch((error) =>
+              Alert.alert("Refresh failed", errorMessage(error)),
+            );
+          }}
           className="h-10 w-10 items-center justify-center rounded-[14px] bg-white/15"
         >
           <Ionicons name="refresh" color="white" size={20} />
@@ -186,13 +192,12 @@ export default function HomeScreen() {
         />
       </View>
       <View className="rounded-xl border border-gray-300 bg-white px-4">
-        {transactions.map((transaction) => (
-          <TransactionRow key={transaction.id} transaction={transaction} />
-        ))}
+        {transactions
+          ? transactions.map((transaction) => (
+              <TransactionRow key={transaction.id} transaction={transaction} />
+            ))
+          : "No Activity found"}
       </View>
-      <Text className="text-center text-[11px] text-muted">
-        © 2026 nPay · Developed by Taposh
-      </Text>
     </Page>
   );
 }

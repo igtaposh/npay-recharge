@@ -1,9 +1,12 @@
+import { useRecharge } from "../components/recharge-context";
+import { api, errorMessage } from "../data/api";
+import type { Challenge } from "../data/api-types";
 import { SuccessDialog } from "@/components/success-dialog";
 import { Ionicons } from "@react-native-vector-icons/ionicons/static";
 import MaterialIcons from "@react-native-vector-icons/material-icons/static";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import CustomBottomSheet from "../components/customBottomSheet";
 import { Button, Card, Field, Page, PageHeading } from "../components/ui";
 
@@ -14,14 +17,12 @@ type passwordChangeStepType = "oldPassword" | "otp" | "newPassword";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [profile, setProfile] = useState({
-    name: "Alex Morgan",
-    shopName: "Morgan Recharge Point",
-    email: "alex.morgan@example.com",
-    mobile: "+91 98765 43210",
-    pan: "ABCDE •••• F",
-    aadhaar: "•••• •••• 4821",
-  });
+  const { account, reloadProfile, signOut } = useRecharge();
+  const profile = {name:account?.name||"",shopName:account?.business_name||"",email:account?.email||"",mobile:account?.phone||"",pan:account?.pan||"",aadhaar:account?.aadhaar||""};
+  const [busy, setBusy] = useState(false);
+  const [challengeId, setChallengeId] = useState("");
+  const [proof, setProof] = useState("");
+  const [demoOtp, setDemoOtp] = useState("");
   const [sheetMode, setSheetMode] = useState<SheetMode>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
 
@@ -64,6 +65,7 @@ export default function ProfileScreen() {
   }
 
   function resetSheetForm() {
+    setChallengeId(""); setProof(""); setDemoOtp("");
     setName("");
     setPasswordname("");
     setShopName("");
@@ -95,192 +97,44 @@ export default function ProfileScreen() {
     resetSheetForm();
   }
 
-  const updateName = () => {
-    if (!name) {
-      setError({
-        name: "name",
-        msg: "please enter a valid name.",
-      });
-      return;
-    }
-    if (!passwordName) {
-      setError({
-        name: "passwordName",
-        msg: "please enter a valid password.",
-      });
-      return;
-    }
-    if (passwordName.length < 8) {
-      setError({
-        name: "passwordName",
-        msg: "Password must be 8 digit or more long .",
-      });
-      return;
-    }
-    setProfile((current) => ({ ...current, name }));
-    closeSheet();
+  const run = async (action: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true);setError({name:"",msg:""});
+    try {await action();}catch(error){setError({name:"api",msg:errorMessage(error)});}finally{setBusy(false);}
   };
-  const updateShopName = () => {
-    if (!shopName) {
-      setError({
-        name: "shopName",
-        msg: "please enter a valid shop name.",
-      });
-      return;
-    }
-    if (!passwordShopName) {
-      setError({
-        name: "passwordShopName",
-        msg: "please enter a valid password.",
-      });
-      return;
-    }
-    if (passwordShopName.length < 8) {
-      setError({
-        name: "passwordShopName",
-        msg: "Password must be 8 digit or more long .",
-      });
-      return;
-    }
-    setProfile((current) => ({ ...current, shopName }));
-    closeSheet();
-  };
-
-  const updateEmailAddress = () => {
-    if (!email) {
-      setError({
-        name: "email",
-        msg: "please enter a valid email address.",
-      });
-      return;
-    }
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      setError({
-        name: "email",
-        msg: "please enter a valid email address.",
-      });
-      return;
-    }
-    if (!passwordEmail) {
-      setError({
-        name: "passwordEmail",
-        msg: "please enter a valid password.",
-      });
-      return;
-    }
-    if (passwordEmail.length < 8) {
-      setError({
-        name: "passwordEmail",
-        msg: "Password must be 8 digit or more long .",
-      });
-      return;
-    }
-    setPopup({
-      visible: true,
-      title: "OTP sent!",
-      message: "A 6 Digit OTP has been sent to your enmail",
-      buttonLabel: "OK",
-    });
-    setEmailChangeStep("otp");
-  };
-
-  const validateOtp = () => {
-    if (!emailOtp) {
-      setError({
-        name: "emailOtp",
-        msg: "please enter a valid OTP.",
-      });
-      return;
-    }
-    if (emailOtp.length < 6) {
-      setError({
-        name: "emailOtp",
-        msg: "please enter a valid 6 digit OTP.",
-      });
-      return;
-    }
-    setProfile((current) => ({ ...current, email }));
-    closeSheet();
-  };
-
-  const validatePassword = () => {
-    if (!oldPassword) {
-      setError({
-        name: "oldPassword",
-        msg: "please enter a valid password.",
-      });
-      return;
-    }
-    if (oldPassword.length < 8) {
-      setError({
-        name: "oldPassword",
-        msg: "Password must be 8 digit or more long .",
-      });
-      return;
-    }
-    setPopup({
-      visible: true,
-      title: "OTP sent!",
-      message: "A 6 Digit OTP has been sent to your phone",
-      buttonLabel: "OK",
-    });
-    setPasswordChangeStep("otp");
-  };
-  const validatePhoneOtp = () => {
-    if (!phoneOtp) {
-      setError({
-        name: "phoneOtp",
-        msg: "please enter a valid OTP.",
-      });
-      return;
-    }
-    if (phoneOtp.length < 6) {
-      setError({
-        name: "phoneOtp",
-        msg: "please enter a valid 6 digit OTP.",
-      });
-      return;
-    }
-    setPopup({
-      visible: true,
-      title: "OTP Verified!",
-      message: "OTP Valideted successfully.",
-      buttonLabel: "OK",
-    });
-    setPasswordChangeStep("newPassword");
-  };
-  const changePassword = () => {
-    if (!newPassword) {
-      setError({
-        name: "newPassword",
-        msg: "please enter a valid password.",
-      });
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setError({
-        name: "newPassword",
-        msg: "Password must be 8 digit or more long .",
-      });
-      return;
-    }
-    if (!confirmPassword) {
-      setError({
-        name: "confirmPassword",
-        msg: "please enter a valid confirm password.",
-      });
-      return;
-    }
-    if (confirmPassword !== newPassword) {
-      setError({
-        name: "confirmPassword",
-        msg: "Passwords do not match.",
-      });
-      return;
-    }
-    closeSheet();
-  };
+  const updateName = () => run(async()=>{
+    if (!name.trim()) throw new Error("Enter your name.");
+    await api.request("profile",{name:name.trim(),current_password:passwordName},{method:"PATCH"});
+    await reloadProfile();closeSheet();
+  });
+  const updateShopName = () => run(async()=>{
+    if (!shopName.trim()) throw new Error("Enter your shop name.");
+    await api.request("profile",{business_name:shopName.trim(),current_password:passwordShopName},{method:"PATCH"});
+    await reloadProfile();closeSheet();
+  });
+  const updateEmailAddress = () => run(async()=>{
+    const response=await api.request<Challenge>("security/otp/request",{purpose:"email_change",email:email.trim(),current_password:passwordEmail});
+    setChallengeId(response.data.challenge_id);setDemoOtp(response.data.demo_otp||"");setEmailChangeStep("otp");
+  });
+  const validateOtp = () => run(async()=>{
+    const verified=await api.request<{verification_token:string}>("security/otp/verify",{challenge_id:challengeId,otp:emailOtp});
+    await api.request("security/email",{verification_token:verified.data.verification_token});
+    await reloadProfile();closeSheet();
+  });
+  const validatePassword = () => run(async()=>{
+    const response=await api.request<Challenge>("security/otp/request",{purpose:"password_change",current_password:oldPassword});
+    setChallengeId(response.data.challenge_id);setDemoOtp(response.data.demo_otp||"");setPasswordChangeStep("otp");
+  });
+  const validatePhoneOtp = () => run(async()=>{
+    const verified=await api.request<{verification_token:string}>("security/otp/verify",{challenge_id:challengeId,otp:phoneOtp});
+    setProof(verified.data.verification_token);setDemoOtp("");setPasswordChangeStep("newPassword");
+  });
+  const changePassword = () => run(async()=>{
+    if(newPassword.length<8)throw new Error("Use at least 8 characters.");
+    if(newPassword!==confirmPassword)throw new Error("Passwords do not match.");
+    await api.request("security/password",{verification_token:proof,new_password:newPassword});
+    Alert.alert("Password updated","Sign in with your new password.");await signOut(false);
+  });
   const renderFields = () => {
     if (passwordChangeStep === "oldPassword") {
       return (
@@ -304,7 +158,7 @@ export default function ProfileScreen() {
             secureTextEntry
             error={error.name === "oldPassword" ? error.msg : undefined}
           />
-          <Button label="Submit" onPress={validatePassword} />
+          <Button disabled={busy} label="Submit" onPress={validatePassword} />
           <Text className="text-center text-[11px] leading-4.5 text-muted">
             By using this, you agree to NPay&apos;s Terms &amp; Conditions and
             Privacy Policy.
@@ -333,7 +187,7 @@ export default function ProfileScreen() {
             secureTextEntry
             error={error.name === "phoneOtp" ? error.msg : undefined}
           />
-          <Button label="Verify OTP" onPress={validatePhoneOtp} />
+          <Button disabled={busy} label="Verify OTP" onPress={validatePhoneOtp} />
           <Text className="text-center text-[11px] leading-4.5 text-muted">
             By using this, you agree to NPay&apos;s Terms &amp; Conditions and
             Privacy Policy.
@@ -377,7 +231,7 @@ export default function ProfileScreen() {
             secureTextEntry
             error={error.name === "confirmPassword" ? error.msg : undefined}
           />
-          <Button label="Change Password" onPress={changePassword} />
+          <Button disabled={busy} label="Change Password" onPress={changePassword} />
           <Text className="text-center text-[11px] leading-4.5 text-muted">
             By using this, you agree to NPay&apos;s Terms &amp; Conditions and
             Privacy Policy.
@@ -465,6 +319,7 @@ export default function ProfileScreen() {
             </View>
           </View>
           <Button
+            disabled={busy}
             label="Change password"
             variant="ghost"
             onPress={() => {
@@ -505,6 +360,9 @@ export default function ProfileScreen() {
           }
           snapPoints={["72%", "90%"]}
         >
+          {error.name === "api" ? <Text className="text-sm text-danger">{error.msg}</Text> : null}
+          {demoOtp ? <Text className="text-sm text-green">Development OTP: {demoOtp}</Text> : null}
+          {busy ? <Text className="text-sm text-muted">Please wait…</Text> : null}
           {sheetMode === "name" && (
             <View className="gap-4">
               <Text className="text-sm mb-4 leading-5 text-muted">
@@ -534,7 +392,7 @@ export default function ProfileScreen() {
                 secureTextEntry
                 error={error.name === "passwordName" ? error.msg : undefined}
               />
-              <Button label="Save changes" onPress={updateName} />
+              <Button disabled={busy} label="Save changes" onPress={updateName} />
               <Text className="text-center text-[11px] leading-4.5 text-muted">
                 By using this, you agree to NPay&apos;s Terms &amp; Conditions
                 and Privacy Policy.
@@ -572,7 +430,7 @@ export default function ProfileScreen() {
                   error.name === "passwordShopName" ? error.msg : undefined
                 }
               />
-              <Button label="Save changes" onPress={updateShopName} />
+              <Button disabled={busy} label="Save changes" onPress={updateShopName} />
               <Text className="text-center text-[11px] leading-4.5 text-muted">
                 By using this, you agree to NPay&apos;s Terms &amp; Conditions
                 and Privacy Policy.
@@ -612,7 +470,7 @@ export default function ProfileScreen() {
                       error.name === "passwordEmail" ? error.msg : undefined
                     }
                   />
-                  <Button label="sent OTP" onPress={updateEmailAddress} />
+                  <Button disabled={busy} label="sent OTP" onPress={updateEmailAddress} />
                   <Text className="text-center text-[11px] leading-4.5 text-muted">
                     By using this, you agree to NPay&apos;s Terms &amp;
                     Conditions and Privacy Policy.
@@ -636,7 +494,7 @@ export default function ProfileScreen() {
                     secureTextEntry
                     error={error.name === "emailOtp" ? error.msg : undefined}
                   />
-                  <Button label="Verify OTP" onPress={validateOtp} />
+                  <Button disabled={busy} label="Verify OTP" onPress={validateOtp} />
                   <Text className="text-center text-[11px] leading-4.5 text-muted">
                     By using this, you agree to NPay&apos;s Terms &amp;
                     Conditions and Privacy Policy.

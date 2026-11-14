@@ -102,7 +102,6 @@ export default function PrepaidScreen() {
     name: "",
     msg: "",
   });
-  const [focusAmount, setFocusAmount] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
 
   // Remount-friendly sync when returning from plans with replace params.

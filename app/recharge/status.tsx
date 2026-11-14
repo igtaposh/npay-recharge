@@ -1,3 +1,5 @@
+import type { ApiTransaction } from "../../data/api-types";
+import { api, errorMessage } from "../../data/api";
 import { usePaymentSound } from "@/hooks/usePaymentSound";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import * as Clipboard from "expo-clipboard";
@@ -13,14 +15,11 @@ import {
   type ImageSourcePropType,
 } from "react-native";
 import Animated, {
-  Easing,
   cancelAnimation,
   interpolate,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withRepeat,
-  withSequence,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
@@ -30,7 +29,7 @@ import {
 } from "../../components/recharge-context";
 import { Button, Card, Page } from "../../components/ui";
 import { providerInitials } from "../../data/dth";
-import { generateGiftCode } from "../../data/google-play";
+
 import { prepaidPlans } from "../../data/prepaid-plans";
 
 const operatorLogos: Record<string, ImageSourcePropType> = {
@@ -47,12 +46,6 @@ const dthLogos: Record<string, ImageSourcePropType> = {
 
 const googlePlayLogo = require("../../assets/company-logos/google-play.png");
 
-function resolveDemoStatus(amount: number): TransactionStatus {
-  const lastDigit = Math.abs(amount) % 10;
-  if (lastDigit === 0) return "Pending";
-  if (lastDigit === 1) return "Failed";
-  return "Successful";
-}
 
 function statusMeta(status: TransactionStatus) {
   if (status === "Successful") {
@@ -145,9 +138,13 @@ export default function RechargeStatusScreen() {
   const router = useRouter();
   const { height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
-  const { addTransaction } = useRecharge();
+  const { getTransaction, refreshBalance } = useRecharge();
+  const [loadError, setLoadError] = useState("");
+  const [receipt, setReceipt] = useState<ApiTransaction | null>(null);
+  const [retry, setRetry] = useState(0);
   const { playSuccessSound } = usePaymentSound();
   const params = useLocalSearchParams<{
+    transactionId?: string;
     service?: string;
     phone?: string;
     operator?: string;
@@ -164,9 +161,9 @@ export default function RechargeStatusScreen() {
     params.service === "dth" || params.service === "google-play"
       ? params.service
       : "prepaid";
-  const phone = typeof params.phone === "string" ? params.phone : "";
+  const phone = receipt?.service === "prepaid" ? receipt.recipient || "" : typeof params.phone === "string" ? params.phone : "";
   const subscriber =
-    typeof params.subscriber === "string" ? params.subscriber : "";
+    receipt?.service === "dth" ? receipt.recipient || "" : typeof params.subscriber === "string" ? params.subscriber : "";
   const operatorId = (
     typeof params.operator === "string" ? params.operator : "jio"
   ).toLowerCase();
@@ -178,7 +175,7 @@ export default function RechargeStatusScreen() {
         : "Jio";
   const circle =
     typeof params.circle === "string" ? params.circle : "West Bengal";
-  const amount = Number(
+  const amount = receipt ? Number(receipt.amount) : Number(
     typeof params.amount === "string" ? params.amount : "0",
   );
   const planId = typeof params.planId === "string" ? params.planId : "";
@@ -209,28 +206,13 @@ export default function RechargeStatusScreen() {
   const serviceIcon =
     service === "prepaid" ? operatorLogo : (dthLogos[operatorId] ?? null);
 
-  const transactionTitle =
-    service === "prepaid"
-      ? `${operatorName} prepaid`
-      : service === "dth"
-        ? operatorName === "DTH"
-          ? "DTH recharge"
-          : `${operatorName} DTH`
-        : "Google Play code";
-  const transactionSubtitle =
-    service === "prepaid"
-      ? plan
-        ? `${plan.data} · ${plan.validity} · •••• ${phone.slice(-4)}`
-        : `Mobile recharge · •••• ${phone.slice(-4)}`
-      : `${planName || "DTH recharge"} · •••• ${subscriber.slice(-4)}`;
-
   const [phase, setPhase] = useState<"processing" | "settled">("processing");
   const [resultStatus, setResultStatus] =
     useState<TransactionStatus>("Successful");
-  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const transactionId = typeof params.transactionId === "string" ? params.transactionId : null;
   const [redeemCode, setRedeemCode] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
-  const hasResolved = useRef(false);
+
   const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const settle = useSharedValue(0);
@@ -264,85 +246,30 @@ export default function RechargeStatusScreen() {
   }
 
   useEffect(() => {
-    if (hasResolved.current) return;
+    let active=true;
+    void (async()=>{
+      try {
+        if(!transactionId)throw new Error("Transaction reference is missing.");
+        const transaction=await getTransaction(transactionId);
+        if(!active)return;
+        setLoadError("");setReceipt(transaction);setResultStatus(transaction.status);
+        if(transaction.status==="Successful")playSuccessSound();
+        if(transaction.category==="google-play"&&transaction.status==="Successful"){
+          const code=await api.request<{code:string}>(`transactions/${transactionId}/gift-code`);
+          if(active)setRedeemCode(code.data.code);
+        }
+        await refreshBalance();
+      }catch(error){if(active)setLoadError(errorMessage(error));}
+      finally{if(active){cancelAnimation(spin);settle.value=withTiming(1,{duration:reduceMotion?0:380});setPhase("settled");}}
+    })();
+    return ()=>{active=false;};
+  },[transactionId,getTransaction,refreshBalance,playSuccessSound,settle,spin,reduceMotion,retry]);
 
-    if (reduceMotion) {
-      spin.value = 0;
-      pulse.value = 0.5;
-      ring.value = 0.5;
-    } else {
-      spin.value = withRepeat(
-        withTiming(1, { duration: 1000, easing: Easing.linear }),
-        -1,
-        false,
-      );
-      pulse.value = withRepeat(
-        withSequence(
-          withTiming(1, { duration: 500, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: 500, easing: Easing.inOut(Easing.ease) }),
-        ),
-        -1,
-        false,
-      );
-      ring.value = withRepeat(
-        withSequence(
-          withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) }),
-          withTiming(0, { duration: 0 }),
-        ),
-        -1,
-        false,
-      );
-    }
-
-    const delay = reduceMotion ? 250 : 1000;
-    const timer = setTimeout(() => {
-      if (hasResolved.current) return;
-      hasResolved.current = true;
-
-      // Gift codes always settle successfully in the demo so the redeem
-      // code can be shown. Other services keep the amount-based demo result.
-      const nextStatus: TransactionStatus =
-        service === "google-play" ? "Successful" : resolveDemoStatus(amount);
-      setResultStatus(nextStatus);
-      if (nextStatus === "Successful") playSuccessSound();
-
-      const id = addTransaction({
-        title: transactionTitle,
-        subtitle: transactionSubtitle,
-        amount,
-        category: "recharge",
-        status: nextStatus,
-      });
-      setTransactionId(id);
-
-      if (service === "google-play" && nextStatus === "Successful") {
-        setRedeemCode(generateGiftCode(`${id}|${amount}`));
-      }
-
-      cancelAnimation(spin);
-      settle.value = withTiming(1, {
-        duration: reduceMotion ? 0 : 380,
-        easing: Easing.out(Easing.cubic),
-      });
-      pulse.value = withTiming(0, { duration: reduceMotion ? 0 : 160 });
-      ring.value = withTiming(0, { duration: reduceMotion ? 0 : 160 });
-      setPhase("settled");
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [
-    addTransaction,
-    amount,
-    service,
-    transactionTitle,
-    transactionSubtitle,
-    playSuccessSound,
-    pulse,
-    reduceMotion,
-    ring,
-    settle,
-    spin,
-  ]);
+  useEffect(()=>{
+    if(phase!=="settled" || resultStatus!=="Pending" || loadError)return;
+    const timer=setTimeout(()=>setRetry(value=>value+1),10000);
+    return()=>clearTimeout(timer);
+  },[phase,resultStatus,loadError,retry]);
 
   const iconStageStyle = useAnimatedStyle(() => {
     const translateY = interpolate(settle.value, [0, 1], [centerY, settledY]);
@@ -367,8 +294,11 @@ export default function RechargeStatusScreen() {
     transform: [{ scale: interpolate(settle.value, [0, 1], [0.7, 1]) }],
   }));
 
+  if (loadError) return <Page><Card><Text className="text-sm text-danger">{loadError}</Text><Button label="Refresh status" onPress={()=>setRetry(current=>current+1)} /></Card></Page>;
+
   return (
     <Page scroll={phase === "settled"}>
+      {receipt?.provider_message ? <Text className="text-center text-sm text-muted">{receipt.provider_message}</Text> : null}
       <View className="flex-1">
         <Animated.View
           style={[

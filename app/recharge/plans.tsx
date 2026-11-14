@@ -1,7 +1,10 @@
+import { api, errorMessage } from "../../data/api";
+import type { ApiOperator, ApiCircle, ApiPlan } from "../../data/api-types";
+import { useRecharge } from "../../components/recharge-context";
 import { WalletBalanceBar } from "@/components/wallet-balance-bar";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Button, Page, PageHeading } from "../../components/ui";
 import {
@@ -13,6 +16,9 @@ import {
 
 export default function PrepaidPlansScreen() {
   const router = useRouter();
+  const { mockRecharge } = useRecharge();
+  const [catalog,setCatalog] = useState<{key:string;plans:PrepaidPlan[];error:string}>({key:"",plans:[],error:""});
+  const [reload,setReload] = useState(0);
   const params = useLocalSearchParams<{
     phone?: string;
     operator?: string;
@@ -29,9 +35,29 @@ export default function PrepaidPlansScreen() {
   const [query, setQuery] = useState("");
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
+  const requestIdentity=`${operatorId}:${circle}:${reload}`;
+  const loading=!mockRecharge && catalog.key!==requestIdentity;
+  const loadError=catalog.key===requestIdentity ? catalog.error : "";
+  useEffect(() => {
+    if (mockRecharge) return;
+    let active=true;
+    void (async()=>{
+      try {
+        const [operators,circles]=await Promise.all([api.request<ApiOperator[]>("operators?service=prepaid"),api.request<ApiCircle[]>("circles")]);
+        const operator=operators.data.find(o=>o.code===operatorId);
+        const selectedCircle=circles.data.find(c=>c.name===circle || c.code===circle);
+        if(!operator || !selectedCircle) throw new Error("This operator or circle is unavailable.");
+        const plans=await api.request<ApiPlan[]>(`plans?operator_id=${operator.id}&circle_id=${selectedCircle.id}&limit=100`);
+        if(active) setCatalog({key:requestIdentity,error:"",plans:plans.data.map(p=>({id:p.id,amount:Number(p.amount),category:p.category as PlanCategoryId,data:p.data_allowance || "See operator benefits",validity:p.validity || "See operator validity",description:p.description || p.name,tag:p.tag || undefined}))});
+      } catch(error){if(active)setCatalog({key:requestIdentity,plans:[],error:errorMessage(error)});}
+    })();
+    return()=>{active=false;};
+  },[mockRecharge,operatorId,circle,requestIdentity]);
+  const availablePlans=useMemo(()=>mockRecharge ? prepaidPlans : catalog.key===requestIdentity ? catalog.plans : [],[mockRecharge,catalog,requestIdentity]);
+
   const filteredPlans = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return prepaidPlans.filter((plan) => {
+    return availablePlans.filter((plan) => {
       const matchesCategory = plan.category === category;
       if (!matchesCategory) return false;
       if (!normalizedQuery) return true;
@@ -43,9 +69,9 @@ export default function PrepaidPlansScreen() {
         plan.description.toLowerCase().includes(normalizedQuery)
       );
     });
-  }, [category, query]);
+  }, [category, query, availablePlans]);
 
-  const selectedPlan = prepaidPlans.find((plan) => plan.id === selectedPlanId);
+  const selectedPlan = availablePlans.find((plan) => plan.id === selectedPlanId);
 
   function rechargePlan(plan: PrepaidPlan) {
     router.push({
@@ -57,6 +83,8 @@ export default function PrepaidPlansScreen() {
         circle,
         amount: String(plan.amount),
         planId: plan.id,
+        planData:plan.data,
+        planValidity:plan.validity,
       },
     });
   }
@@ -149,6 +177,8 @@ export default function PrepaidPlansScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ gap: 12, paddingBottom: 12 }}
         >
+          {loading ? <Text className="text-center text-muted">Loading recharge plans…</Text> : null}
+          {loadError ? <><Text className="text-danger">{loadError}</Text><Button label="Retry loading plans" onPress={()=>setReload(value=>value+1)} /></> : null}
           {filteredPlans.map((plan) => {
             const isSelected = selectedPlanId === plan.id;
             return (
@@ -206,14 +236,14 @@ export default function PrepaidPlansScreen() {
             );
           })}
 
-          {filteredPlans.length === 0 ? (
+          {!loading && !loadError && filteredPlans.length === 0 ? (
             <View className="items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-10">
               <MaterialIcons name="search-off" size={28} color="#68788F" />
               <Text className="text-base font-bold text-ink">
                 No plans found
               </Text>
               <Text className="text-center text-sm leading-5 text-muted">
-                Try another category or clear the search.
+                No configured plans match this category. Try another category or contact support.
               </Text>
             </View>
           ) : null}

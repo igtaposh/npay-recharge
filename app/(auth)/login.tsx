@@ -1,12 +1,16 @@
+import { api, errorMessage } from "../../data/api";
+import { useRecharge } from "../../components/recharge-context";
 import CustomBottomSheet from "@/components/customBottomSheet";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { Button, Field, Page } from "../../components/ui";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { signIn, connectionError } = useRecharge();
+  const [busy, setBusy] = useState(false);
   const [visible, setVisible] = useState(false);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -18,57 +22,29 @@ export default function LoginScreen() {
     msg: "",
   });
 
-  function submit() {
-    if (!/^\d{10}$/.test(phone.trim())) {
-      setError({
-        name: "phone",
-        msg: "Enter a valid 10-digit number.",
-      });
-      return;
-    }
-    if (password.length < 6) {
-      setError({
-        name: "password",
-        msg: "Enter a valid password of at least 6 characters.",
-      });
-      return;
-    }
-    setError({
-      name: "",
-      msg: "",
-    });
-    router.replace("/(tabs)");
+  async function submit() {
+    if (busy) return;
+    if (!/^[6-9][0-9]{9}$/.test(phone.trim())) { setError({name:"phone",msg:"Enter a valid 10-digit mobile number."}); return; }
+    if (password.length < 8) { setError({name:"password",msg:"Use at least 8 characters."}); return; }
+    setBusy(true); setError({name:"",msg:""});
+    try { await signIn(phone.trim(), password); }
+    catch (error) { setError({name:"api",msg:errorMessage(error)}); }
+    finally { setBusy(false); }
   }
-
-  const onSubmitIntrest = () => {
-    if (!partnerName) {
-      setError({
-        name: "partnerName",
-        msg: "Enter a valid name.",
-      });
-      return;
-    }
-    if (!shopAddress) {
-      setError({
-        name: "shopAddress",
-        msg: "Enter a valid address.",
-      });
-      return;
-    }
-    if (!/^\d{10}$/.test(partnerPhone.trim())) {
-      setError({
-        name: "partnerPhone",
-        msg: "Enter a valid 10-digit number.",
-      });
-      return;
-    }
-
-    setError({
-      name: "",
-      msg: "",
-    });
-    setVisible(false);
+  const onSubmitIntrest = async () => {
+    if (busy) return;
+    if (!partnerName.trim()) { setError({name:"partnerName",msg:"Enter your name."}); return; }
+    if (!shopAddress.trim()) { setError({name:"shopAddress",msg:"Enter your shop address."}); return; }
+    if (!/^[6-9][0-9]{9}$/.test(partnerPhone.trim())) { setError({name:"partnerPhone",msg:"Enter a valid phone number."}); return; }
+    setBusy(true); setError({name:"",msg:""});
+    try {
+      await api.request("interests", {name:partnerName.trim(),shop_address:shopAddress.trim(),phone:partnerPhone.trim()}, {public:true});
+      setVisible(false); setPartnerName(""); setShopAddress(""); setPartnerPhone("");
+      Alert.alert("Interest submitted", "Our team will contact you to complete retailer onboarding.");
+    } catch (error) { setError({name:"api",msg:errorMessage(error)}); }
+    finally { setBusy(false); }
   };
+
   return (
     <>
       <Page walletBar={false}>
@@ -125,7 +101,7 @@ export default function LoginScreen() {
             error={error.name === "phone" ? error.msg : undefined}
           />
           <Field
-            maxLength={16}
+            maxLength={64}
             value={password}
             onChangeText={(value) => {
               setPassword(value);
@@ -147,7 +123,8 @@ export default function LoginScreen() {
           </Pressable>
         </View>
 
-        <Button label="Sign in" onPress={submit} />
+        {error.name === "api" || connectionError ? <Text className="text-sm text-danger">{error.name === "api" ? error.msg : connectionError}</Text> : null}
+        <Button label={busy ? "Please wait…" : "Sign in"} disabled={busy} onPress={submit} />
         <Text className="text-center text-[11px] leading-4.5 text-muted">
           By signing in, you agree to NPay&apos;s Terms &amp; Conditions and
           Privacy Policy.
@@ -245,7 +222,8 @@ export default function LoginScreen() {
                 distributor will contact you as soon as possible.
               </Text>
             </View>
-            <Button label="Submit interest" onPress={onSubmitIntrest} />
+            {error.name === "api" ? <Text className="text-sm text-danger">{error.msg}</Text> : null}
+            <Button label={busy ? "Submitting…" : "Submit interest"} disabled={busy} onPress={onSubmitIntrest} />
           </View>
         </View>
       </CustomBottomSheet>

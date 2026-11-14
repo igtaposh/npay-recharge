@@ -2,8 +2,10 @@ import { WalletBalanceBar } from "@/components/wallet-balance-bar";
 import Ionicons from "@react-native-vector-icons/ionicons/static";
 import MaterialIcons from "@react-native-vector-icons/material-icons/static";
 import { Link, useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
+import { useRecharge } from "../components/recharge-context";
 import { Page, PageHeading } from "../components/ui";
+import { errorMessage } from "../data/api";
 
 const settings = [
   {
@@ -40,6 +42,7 @@ const settings = [
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { signOut } = useRecharge();
 
   return (
     <Page>
@@ -93,7 +96,11 @@ export default function SettingsScreen() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Log in or switch account"
-        onPress={() => router.push("/login")}
+        onPress={() => {
+          void signOut().catch((error) =>
+            Alert.alert("Signed out", errorMessage(error)),
+          );
+        }}
         className="mt-1 flex-row items-center gap-3.5 rounded-xl border border-gray-300 bg-white p-4"
       >
         <View className="h-15 w-15 items-center justify-center rounded-xl bg-green-light">

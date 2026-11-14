@@ -1,5 +1,3 @@
 import { Redirect } from "expo-router";
-
-export default function Index() {
-  return <Redirect href="/(tabs)" />;
-}
+import { useRecharge } from "../components/recharge-context";
+export default function Index() { const { account } = useRecharge(); return <Redirect href={account ? "/(tabs)" : "/(auth)/login"} />; }

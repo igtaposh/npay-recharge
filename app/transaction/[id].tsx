@@ -1,21 +1,26 @@
+import { api, errorMessage } from "../../data/api";
+import type { ApiTransaction } from "../../data/api-types";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import type { ImageSourcePropType } from "react-native";
-import { Image, Platform, Pressable, Text, View } from "react-native";
+import { Alert, Image, Platform, Pressable, Text, View } from "react-native";
 import { useRecharge } from "../../components/recharge-context";
-import { Card, Page, PageHeading } from "../../components/ui";
+import { Button, Card, Page, PageHeading } from "../../components/ui";
 
 const googlePlayLogo = require("../../assets/company-logos/google-play.png");
 
 export default function TransactionDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { transactions } = useRecharge();
-  const transaction = transactions.find((item) => item.id === id);
+  const { transactions, getTransaction } = useRecharge();
+  const [loaded, setLoaded] = useState<ApiTransaction | null>(null);
+  const transaction = loaded ? {...loaded,amount:Number(loaded.amount),date:new Date(loaded.created_at).toLocaleString()} : transactions.find((item) => item.id === id);
+
   const [redeemCode, setRedeemCode] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
+  useEffect(()=>{let active=true;void getTransaction(id).then(row=>{if(active)setLoaded(row);if(row.category==="google-play"&&row.status==="Successful")return api.request<{code:string}>(`transactions/${id}/gift-code`).then(code=>{if(active)setRedeemCode(code.data.code);});}).catch(error=>{if(active)Alert.alert("Transaction",errorMessage(error));});return()=>{active=false;};},[id,getTransaction]);
 
   const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -76,7 +81,7 @@ export default function TransactionDetailsScreen() {
       <PageHeading
         eyebrow={
           transaction.category === "google-play"
-            ? transaction.status == "Successful"
+            ? transaction.status === "Successful"
               ? "Successfull"
               : "Pending"
             : "TRANSACTION DETAILS"
@@ -88,6 +93,8 @@ export default function TransactionDetailsScreen() {
             : "Google Play Code"
         }
       />
+      {transaction.service === "wallet" && transaction.status === "Pending" && transaction.provider?.startsWith("smepay-") ? <Button label="Resume payment / check status" onPress={() => router.push({pathname:"/wallet/payment",params:{id:transaction.id}})} /> : null}
+      {transaction.provider === "mrobotics" && transaction.status === "Pending" ? <Button label="Check recharge status" onPress={() => router.push({pathname:"/recharge/status",params:{transactionId:transaction.id,service:transaction.service}})} /> : null}
       <View className="items-center gap-3 rounded-xl border border-gray-300 bg-white px-5 py-7">
         <View
           className={`h-16 w-16 items-center justify-center rounded-[22px] ${isWalletCredit ? "bg-green-light" : "bg-[#EEF4FF]"}`}

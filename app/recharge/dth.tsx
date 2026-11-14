@@ -1,3 +1,5 @@
+import { DthDirectRecharge } from "../../components/dth-direct-recharge";
+import { api, errorMessage } from "../../data/api";
 import CustomBottomSheet from "@/components/customBottomSheet";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -14,7 +16,6 @@ import { useRecharge } from "../../components/recharge-context";
 import { Button, Card, Page, PageHeading } from "../../components/ui";
 import {
   dthProviders,
-  lookupDthCustomer,
   providerInitials,
   type DthCustomer,
   type DthProviderId,
@@ -80,6 +81,11 @@ function DetailRow({
 }
 
 export default function DthScreen() {
+  const { mockRecharge } = useRecharge();
+  return mockRecharge ? <DemoDthScreen /> : <DthDirectRecharge />;
+}
+
+function DemoDthScreen() {
   const router = useRouter();
   const { balance } = useRecharge();
   const params = useLocalSearchParams<{
@@ -109,12 +115,10 @@ export default function DthScreen() {
   const [error, setError] = useState({ name: "", msg: "" });
 
   const requestId = useRef(0);
-  const fetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const appliedKey = `${paramSubscriber}|${paramOperatorId}`;
   const [lastAppliedKey, setLastAppliedKey] = useState(appliedKey);
   if (appliedKey !== lastAppliedKey) {
-    requestId.current += 1;
     setLastAppliedKey(appliedKey);
     setFetching(false);
     setSelectedProvider(initialProvider);
@@ -129,10 +133,9 @@ export default function DthScreen() {
   }
 
   useEffect(() => {
-    return () => {
-      if (fetchTimer.current) clearTimeout(fetchTimer.current);
-    };
-  }, []);
+    requestId.current += 1;
+    return () => { requestId.current += 1; };
+  }, [appliedKey]);
 
   const suggestions = customer
     ? [
@@ -145,7 +148,6 @@ export default function DthScreen() {
 
   const selectProvider = (provider: Provider) => {
     requestId.current += 1;
-    if (fetchTimer.current) clearTimeout(fetchTimer.current);
     setFetching(false);
     setSelectedProvider(provider);
     setConsumer((current) => current.slice(0, provider.digits));
@@ -157,14 +159,13 @@ export default function DthScreen() {
 
   const clearCustomer = () => {
     requestId.current += 1;
-    if (fetchTimer.current) clearTimeout(fetchTimer.current);
     setFetching(false);
     setCustomer(null);
     setAmount("");
     setError({ name: "", msg: "" });
   };
 
-  const fetchDetails = () => {
+  const fetchDetails = async () => {
     if (!new RegExp(`^\\d{${selectedProvider.digits}}$`).test(consumer)) {
       setError({
         name: "consumer",
@@ -179,14 +180,13 @@ export default function DthScreen() {
     const providerId = selectedProvider.id;
     const consumerNumber = consumer;
 
-    if (fetchTimer.current) clearTimeout(fetchTimer.current);
-    fetchTimer.current = setTimeout(() => {
-      if (requestId.current !== current) return;
-      const nextCustomer = lookupDthCustomer(providerId, consumerNumber);
-      setCustomer(nextCustomer);
-      setAmount(String(nextCustomer.dueAmount));
-      setFetching(false);
-    }, 500);
+    try {
+      const response=await api.request<DthCustomer>("dth/lookup",{operator:providerId,subscriber:consumerNumber});
+      if(requestId.current!==current)return;
+      setCustomer(response.data);setAmount(String(response.data.dueAmount));
+    }catch(error){if(requestId.current===current)setError({name:"consumer",msg:errorMessage(error)});}
+    finally{if(requestId.current===current)setFetching(false);}
+
   };
 
   const proceed = () => {

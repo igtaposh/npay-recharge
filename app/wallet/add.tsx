@@ -1,6 +1,7 @@
+import { newRequestKey, errorMessage } from "../../data/api";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { Button, Card, Field, Page, PageHeading } from "../../components/ui";
 import { useRecharge } from "../../components/recharge-context";
 
@@ -8,28 +9,31 @@ const suggestions = [500, 1000, 2000, 5000];
 
 export default function AddBalanceScreen() {
   const router = useRouter();
-  const { balance, addTransaction } = useRecharge();
+  const { balance, topup } = useRecharge();
+  const [busy, setBusy] = useState(false);
+  const [requestKey] = useState(newRequestKey);
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
 
-  function submit() {
+  async function submit() {
+    if (busy) return;
     const parsedAmount = Number(amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount < 1 || parsedAmount > 100000) {
       setError("Enter an amount between ₹1 and ₹1,00,000.");
       return;
     }
-    addTransaction({
-      title: "Wallet top-up",
-      subtitle: "Added to NPay wallet · UPI",
-      amount: parsedAmount,
-      category: "wallet",
-    });
-    router.replace("/(tabs)/wallet");
+    setBusy(true);setError("");
+    try {const transaction=await topup(parsedAmount.toFixed(2),requestKey);
+      if(transaction.checkout) { router.replace({pathname:"/wallet/payment",params:{id:transaction.id}}); return; }
+      if(transaction.status==="Pending")Alert.alert("Payment pending","Your balance will update after payment confirmation.");
+      router.replace("/(tabs)/wallet");
+    }catch(error){setError(errorMessage(error));}finally{setBusy(false);}
+
   }
 
   return (
     <Page>
-      <PageHeading eyebrow="YOUR WALLET" title="Add balance" subtitle="Top up your demo wallet in a few taps." />
+      <PageHeading eyebrow="YOUR WALLET" title="Add balance" subtitle="Top up your wallet with UPI." />
       <Card className="gap-2 border-[#D6E4FF] bg-green-light">
         <Text className="text-xs font-extrabold tracking-[0.6px] text-green">AVAILABLE BALANCE</Text>
         <Text className="text-[30px] font-extrabold text-ink">₹{balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</Text>
@@ -59,14 +63,14 @@ export default function AddBalanceScreen() {
           <View className="h-11 w-11 items-center justify-center rounded-[15px] bg-green-light"><Text className="text-lg text-green">▤</Text></View>
           <View className="flex-1 gap-1">
             <Text className="text-sm font-bold text-ink">UPI payment</Text>
-            <Text className="text-xs text-muted">Secure demo checkout</Text>
+            <Text className="text-xs text-muted">Payment is verified by the server</Text>
           </View>
           <Text className="text-[11px] font-extrabold text-green">SELECTED</Text>
         </View>
       </Card>
       {error ? <Text className="text-[13px] leading-5 text-danger">{error}</Text> : null}
-      <Button label={amount ? `Add ₹${Number(amount).toLocaleString("en-IN")}` : "Enter an amount"} onPress={submit} />
-      <Text className="text-center text-xs leading-5 text-muted">Demo only. No money will be charged or transferred.</Text>
+      <Button disabled={busy} label={busy ? "Processing…" : amount ? `Add ₹${Number(amount).toLocaleString("en-IN")}` : "Enter an amount"} onPress={submit} />
+      <Text className="text-center text-xs leading-5 text-muted">Your wallet updates after payment verification. Check the checkout screen for test or live mode.</Text>
     </Page>
   );
 }

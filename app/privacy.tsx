@@ -1,3 +1,5 @@
+import { api, errorMessage } from "../data/api";
+import type { Challenge } from "../data/api-types";
 import CustomBottomSheet from "@/components/customBottomSheet";
 import { PinDots, PinPad } from "@/components/pin-pad";
 import { useRecharge } from "@/components/recharge-context";
@@ -6,7 +8,7 @@ import { WalletBalanceBar } from "@/components/wallet-balance-bar";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { Button, Card, Field, Page, PageHeading } from "../components/ui";
 import {
   privacyPolicySections,
@@ -102,7 +104,13 @@ function MpinEntry({
 
 export default function PrivacySecurityScreen() {
   const router = useRouter();
-  const { mpin, updateMpin } = useRecharge();
+  const { account, signOut } = useRecharge();
+  const setup = !account?.has_mpin;
+  const [currentMpin, setCurrentMpin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [challengeId, setChallengeId] = useState("");
+  const [proof, setProof] = useState("");
+  const [demoOtp, setDemoOtp] = useState("");
   const [sheetVisible, setSheetVisible] = useState(false);
   const [step, setStep] = useState<MpinStep>("current");
   const [flow, setFlow] = useState<MpinFlow>("change");
@@ -134,6 +142,7 @@ export default function PrivacySecurityScreen() {
 
   function openSheet() {
     resetSheetState();
+    setStep(setup ? "password" : "current");
     setSheetVisible(true);
   }
 
@@ -153,34 +162,25 @@ export default function PrivacySecurityScreen() {
     setPin((current) => current.slice(0, -1));
   }
 
-  function completeMpinChange() {
-    const wasReset = flow === "reset";
-
-    updateMpin(newMpin);
-    setSheetVisible(false);
-    resetSheetState();
-    setPopup({
-      visible: true,
-      title: wasReset ? "M-PIN reset" : "M-PIN updated",
-      message:
-        "Your new 4-digit M-PIN is active. Use it to confirm your next recharge.",
-      buttonLabel: "Done",
-    });
+  async function completeMpinChange() {
+    if (busy) return;
+    setBusy(true);setError("");
+    try {
+      if(flow==="reset") await api.request("security/mpin/reset",{verification_token:proof,new_mpin:newMpin});
+      else await api.request("security/mpin",{new_mpin:newMpin,...(setup?{current_password:password}:{current_mpin:currentMpin})});
+      Alert.alert("M-PIN updated","Please sign in again to continue.");await signOut(false);
+    }catch(error){setError(errorMessage(error));}finally{setBusy(false);}
   }
 
   function submitPin() {
+    if (busy) return;
     if (pin.length < MPIN_LENGTH) {
       setError(`Enter your ${MPIN_LENGTH}-digit M-PIN.`);
       return;
     }
 
     if (step === "current") {
-      if (pin !== mpin) {
-        setError("Incorrect M-PIN. Try again.");
-        setPin("");
-        return;
-      }
-
+      setCurrentMpin(pin);
       setError("");
       setPin("");
       setStep("new");
@@ -201,7 +201,7 @@ export default function PrivacySecurityScreen() {
       return;
     }
 
-    completeMpinChange();
+    void completeMpinChange();
   }
 
   function startReset() {
@@ -226,25 +226,18 @@ export default function PrivacySecurityScreen() {
     setError("");
   }
 
-  function verifyPassword() {
-    if (password.trim().length < 8) {
-      setError("Enter your account password (at least 8 characters).");
-      return;
-    }
-
-    setError("");
-    setStep("otp");
+  async function verifyPassword() {
+    if(busy)return;setBusy(true);setError("");
+    try {
+      if(setup && flow!=="reset"){if(password.length<8)throw new Error("Enter your account password.");setStep("new");return;}
+      const response=await api.request<Challenge>("security/otp/request",{purpose:"mpin_reset",current_password:password});
+      setChallengeId(response.data.challenge_id);setDemoOtp(response.data.demo_otp||"");setStep("otp");
+    }catch(error){setError(errorMessage(error));}finally{setBusy(false);}
   }
-
-  function verifyOtp() {
-    if (!/^\d{6}$/.test(otp.trim())) {
-      setError("Enter the 6-digit OTP.");
-      return;
-    }
-
-    setError("");
-    setPin("");
-    setStep("new");
+  async function verifyOtp() {
+    if(busy)return;setBusy(true);setError("");
+    try {const response=await api.request<{verification_token:string}>("security/otp/verify",{challenge_id:challengeId,otp});setProof(response.data.verification_token);setPin("");setDemoOtp("");setStep("new");}
+    catch(error){setError(errorMessage(error));}finally{setBusy(false);}
   }
 
   return (
@@ -288,7 +281,7 @@ export default function PrivacySecurityScreen() {
             </View>
           </View>
           <Button
-            label="Change M-PIN"
+            label={setup ? "Set M-PIN" : "Change M-PIN"}
             variant="ghost"
             onPress={openSheet}
           />
@@ -346,6 +339,8 @@ export default function PrivacySecurityScreen() {
           snapPoints={["88%", "96%"]}
         >
           <View className="gap-4 px-1 pb-2">
+            {busy ? <Text className="text-sm text-muted">Please wait…</Text> : null}
+            {demoOtp ? <Text className="text-sm text-green">Development phone OTP: {demoOtp}</Text> : null}
             <View className="gap-2">
               <View className="flex-row items-center justify-between">
                 <Text className="text-[10px] font-extrabold uppercase tracking-[0.8px] text-green">
@@ -381,13 +376,6 @@ export default function PrivacySecurityScreen() {
               <Text className="px-2 text-center text-sm leading-5 text-muted">
                 {content.description}
               </Text>
-              {step === "current" && mpin === "1234" ? (
-                <View className="mt-1 rounded-full bg-green-light px-3 py-1.5">
-                  <Text className="text-[10px] font-extrabold uppercase tracking-[0.6px] text-green">
-                    Demo M-PIN: 1234
-                  </Text>
-                </View>
-              ) : null}
               {step === "current" ? (
                 <Pressable
                   accessibilityRole="button"
@@ -426,7 +414,7 @@ export default function PrivacySecurityScreen() {
                   </Text>
                 </Pressable>
                 <Text className="text-center text-[11px] leading-4.5 text-muted">
-                  Use at least 8 characters for this demo password.
+                  Use your account password (at least 8 characters).
                 </Text>
               </>
             ) : step === "otp" ? (

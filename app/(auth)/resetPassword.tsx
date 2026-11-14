@@ -1,3 +1,5 @@
+import { api, errorMessage } from "../../data/api";
+import type { Challenge } from "../../data/api-types";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -7,6 +9,10 @@ import { Button, Field, Page } from "../../components/ui";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [challengeId, setChallengeId] = useState("");
+  const [proof, setProof] = useState("");
+  const [demoOtp, setDemoOtp] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -23,68 +29,27 @@ export default function ResetPasswordPage() {
     msg: "",
   });
 
-  const submitOTP = () => {
-    if (!/^\d{10}$/.test(phone.trim())) {
-      setError({
-        name: "phone",
-        msg: "Enter a valid 10-digit number.",
-      });
-      return;
-    }
-
-    setError({ name: "", msg: "" });
-    setPopup({
-      visible: true,
-      title: "OTP sent",
-      message: "A 6-digit OTP has been sent to your registered mobile number.",
-      buttonLabel: "Continue",
-    });
-    setStep("verify-otp");
+  const submitOTP = async () => {
+    if (busy) return;
+    if (!/^[6-9][0-9]{9}$/.test(phone.trim())) {setError({name:"phone",msg:"Enter a valid phone number."});return;}
+    setBusy(true); setError({name:"",msg:""});
+    try {const response=await api.request<Challenge>("password-reset/request",{phone:phone.trim()},{public:true});setChallengeId(response.data.challenge_id);setDemoOtp(response.data.demo_otp||"");setStep("verify-otp");}
+    catch(error){setError({name:"api",msg:errorMessage(error)});}finally{setBusy(false);}
   };
-
-  const verifyOTP = () => {
-    if (!/^[0-9]{6}$/.test(otp.trim())) {
-      setError({
-        name: "otp",
-        msg: "Enter a valid 6-digit OTP.",
-      });
-      return;
-    }
-
-    setError({ name: "", msg: "" });
-    setPopup({
-      visible: true,
-      title: "OTP verified",
-      message: "You can now create a new password for your account",
-      buttonLabel: "Continue",
-    });
-    setStep("");
+  const verifyOTP = async () => {
+    if (busy) return;
+    if (!/^[0-9]{6}$/.test(otp)) {setError({name:"otp",msg:"Enter 6 digits."});return;}
+    setBusy(true);setError({name:"",msg:""});
+    try {const response=await api.request<{verification_token:string}>("password-reset/verify",{challenge_id:challengeId,otp},{public:true});setProof(response.data.verification_token);setStep("new-password");}
+    catch(error){setError({name:"api",msg:errorMessage(error)});}finally{setBusy(false);}
   };
-
-  const resetPassword = () => {
-    if (password.length < 6) {
-      setError({
-        name: "password",
-        msg: "Use at least 6 characters for the new password.",
-      });
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError({
-        name: "confirmPassword",
-        msg: "Passwords do not match.",
-      });
-      return;
-    }
-
-    setError({ name: "", msg: "" });
-    setPopup({
-      visible: true,
-      title: "Password updated",
-      message:
-        "Your password has been successfully updated. Please sign in with your new password.",
-      buttonLabel: "Sign in",
-    });
+  const resetPassword = async () => {
+    if (busy) return;
+    if (password.length<8) {setError({name:"password",msg:"Use at least 8 characters."});return;}
+    if(password!==confirmPassword){setError({name:"confirmPassword",msg:"Passwords do not match."});return;}
+    setBusy(true);setError({name:"",msg:""});
+    try {await api.request("password-reset/complete",{verification_token:proof,new_password:password},{public:true});setPopup({visible:true,title:"Password updated",message:"Please sign in with your new password.",buttonLabel:"Sign in"});}
+    catch(error){setError({name:"api",msg:errorMessage(error)});}finally{setBusy(false);}
   };
 
   const renderFields = () => {
@@ -102,7 +67,7 @@ export default function ResetPasswordPage() {
             keyboardType="phone-pad"
             error={error.name === "phone" ? error.msg : undefined}
           />
-          <Button label="Send OTP" onPress={submitOTP} />
+          <Button label="Send OTP" disabled={busy} onPress={submitOTP} />
         </>
       );
     }
@@ -121,7 +86,7 @@ export default function ResetPasswordPage() {
             placeholder="Enter OTP"
             error={error.name === "otp" ? error.msg : undefined}
           />
-          <Button label="Verify OTP" onPress={verifyOTP} />
+          <Button label="Verify OTP" disabled={busy} onPress={verifyOTP} />
         </>
       );
     }
@@ -156,7 +121,7 @@ export default function ResetPasswordPage() {
           error={error.name === "confirmPassword" ? error.msg : undefined}
           secureTextEntry
         />
-        <Button label="Change Password" onPress={resetPassword} />
+        <Button label="Change Password" disabled={busy} onPress={resetPassword} />
       </>
     );
   };
@@ -204,7 +169,12 @@ export default function ResetPasswordPage() {
         </Text>
       </View>
 
-      <View className="gap-4">{renderFields()}</View>
+      <View className="gap-4">
+        {demoOtp && step === "verify-otp" ? <Text className="text-sm text-green">Development phone OTP: {demoOtp}</Text> : null}
+        {error.name === "api" ? <Text className="text-sm text-danger">{error.msg}</Text> : null}
+        {busy ? <Text className="text-sm text-muted">Please wait…</Text> : null}
+        {renderFields()}
+      </View>
 
       <Text className="text-center text-[11px] leading-4.5 text-muted">
         By using this, you agree to NPay&apos;s Terms &amp; Conditions and

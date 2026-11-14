@@ -18,14 +18,14 @@ Google Play gift codes, and wallet activity.
 
 ## ✨ What you can explore
 
-| Feature | What it does |
-| --- | --- |
-| 📱 **Prepaid recharge** | Explore mobile recharge plans and a sample confirmation flow. |
-| 📺 **DTH recharge** | Try the television top-up flow. |
-| 🎮 **Google Play** | Explore the gift-code purchase flow. |
-| 💳 **Wallet** | View a sample balance and add demo funds. |
-| 🧾 **Activity** | Browse recent transactions and recharge history. |
-| ⚙️ **Account & settings** | Explore profile, preferences, help, and demo information. |
+| Feature                   | What it does                                                  |
+| ------------------------- | ------------------------------------------------------------- |
+| 📱 **Prepaid recharge**   | Explore mobile recharge plans and a sample confirmation flow. |
+| 📺 **DTH recharge**       | Try the television top-up flow.                               |
+| 🎮 **Google Play**        | Explore the gift-code purchase flow.                          |
+| 💳 **Wallet**             | View a sample balance and add demo funds.                     |
+| 🧾 **Activity**           | Browse recent transactions and recharge history.              |
+| ⚙️ **Account & settings** | Explore profile, preferences, help, and demo information.     |
 
 > [!IMPORTANT]
 > **nPay is a prototype.** It does not process real payments, issue real gift
@@ -57,13 +57,13 @@ required to run native code that is not included in Expo Go.
 
 ### Useful commands
 
-| Command | Description |
-| --- | --- |
-| `npm start` | Start the Expo development server. |
+| Command           | Description                                                  |
+| ----------------- | ------------------------------------------------------------ |
+| `npm start`       | Start the Expo development server.                           |
 | `npm run android` | Build and run locally on Android (requires Android tooling). |
-| `npm run ios` | Build and run locally on iOS (requires macOS and Xcode). |
-| `npm run web` | Start the web version. |
-| `npm run lint` | Run Expo's lint checks. |
+| `npm run ios`     | Build and run locally on iOS (requires macOS and Xcode).     |
+| `npm run web`     | Start the web version.                                       |
+| `npm run lint`    | Run Expo's lint checks.                                      |
 
 ### EAS development builds
 

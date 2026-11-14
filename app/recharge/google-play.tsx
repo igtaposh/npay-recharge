@@ -11,7 +11,6 @@ import {
   googlePlaySuggestions,
 } from "../../data/google-play";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function GooglePlayScreen() {
   const router = useRouter();

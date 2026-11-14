@@ -1,3 +1,4 @@
+import { newRequestKey, errorMessage } from "../../data/api";
 import { WalletBalanceBar } from "@/components/wallet-balance-bar";
 import { MaterialIcons } from "@react-native-vector-icons/material-icons/static";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -57,7 +58,9 @@ function DetailRow({
 
 export default function ConfirmRechargeScreen() {
   const router = useRouter();
-  const { balance, mpin } = useRecharge();
+  const { balance, submitRecharge } = useRecharge();
+  const [busy, setBusy] = useState(false);
+  const [requestKey] = useState(newRequestKey);
   const params = useLocalSearchParams<{
     service?: string;
     phone?: string;
@@ -66,6 +69,8 @@ export default function ConfirmRechargeScreen() {
     circle?: string;
     amount?: string;
     planId?: string;
+    planData?: string;
+    planValidity?: string;
     subscriber?: string;
     email?: string;
     customerName?: string;
@@ -79,9 +84,7 @@ export default function ConfirmRechargeScreen() {
   const phone = typeof params.phone === "string" ? params.phone : "";
   const subscriber =
     typeof params.subscriber === "string" ? params.subscriber : "";
-  const operatorId = (
-    typeof params.operator === "string" ? params.operator : "jio"
-  ).toLowerCase();
+  const operatorId = service === "google-play" ? "google-play" : (typeof params.operator === "string" ? params.operator : "jio").toLowerCase();
   const operatorName =
     typeof params.operatorName === "string"
       ? params.operatorName
@@ -99,8 +102,8 @@ export default function ConfirmRechargeScreen() {
   const planName = typeof params.planName === "string" ? params.planName : "";
 
   const plan = useMemo(
-    () => prepaidPlans.find((item) => item.id === planId),
-    [planId],
+    () => prepaidPlans.find((item) => item.id === planId) || (params.planData ? {data:params.planData,validity:params.planValidity || ""} : undefined),
+    [planId,params.planData,params.planValidity],
   );
 
   const operatorLogo = operatorLogos[operatorId] ?? operatorLogos.jio;
@@ -136,15 +139,10 @@ export default function ConfirmRechargeScreen() {
     setPin((current) => current.slice(0, -1));
   }
 
-  function completeRecharge() {
+  async function completeRecharge() {
+    if (busy) return;
     if (pin.length < PIN_LENGTH) {
       setPinError(`Enter your ${PIN_LENGTH}-digit NPay M-PIN.`);
-      return;
-    }
-
-    if (pin !== mpin) {
-      setPinError("Incorrect M-PIN.");
-      setPin("");
       return;
     }
 
@@ -158,22 +156,12 @@ export default function ConfirmRechargeScreen() {
       return;
     }
 
-    setPinError("");
-    router.replace({
-      pathname: "/recharge/status",
-      params: {
-        service,
-        phone,
-        operator: operatorId,
-        operatorName,
-        circle,
-        amount: String(amount),
-        planId: plan?.id ?? planId,
-        subscriber,
-        customerName,
-        planName,
-      },
-    });
+    setBusy(true);setPinError("");
+    try {
+      const transaction=await submitRecharge({service,amount:amount.toFixed(2),mpin:pin,operator:operatorId,
+        ...(service==="prepaid"?{circle,...(/^[0-9a-f-]{36}$/i.test(planId)?{plan_id:planId}:{plan_code:planId}),recipient:phone}:service==="dth"?{recipient:subscriber}:{})},requestKey);
+      router.replace({pathname:"/recharge/status",params:{transactionId:transaction.id,service,phone,operator:operatorId,operatorName,circle,amount:String(amount),planId,subscriber,customerName,planName}});
+    }catch(error){setPinError(errorMessage(error));}finally{setBusy(false);}
   }
 
   return (
@@ -287,11 +275,12 @@ export default function ConfirmRechargeScreen() {
               </Text>
             ) : null}
           </View>
+          {busy ? <Text className="text-center text-sm text-muted">Processing your request…</Text> : null}
           <PinPad
             onDigit={appendDigit}
             onBackspace={removeDigit}
             onDone={completeRecharge}
-            doneDisabled={pin.length < PIN_LENGTH}
+            doneDisabled={busy || pin.length < PIN_LENGTH}
           />
           <Text className="text-center text-[11px] leading-4.5 text-muted">
             By using this, you agree to NPay&apos;s Terms &amp; Conditions and
